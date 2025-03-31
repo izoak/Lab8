@@ -1,117 +1,101 @@
-import pygame, sys
-from pygame.locals import *
-import random, time
+import pygame
+import random
+import sys
 
 pygame.init()
 
-FPS = 60
-FramePerSec = pygame.time.Clock()
+WIDTH, HEIGHT = 600, 800
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Racer with Coins & PNGs")
+clock = pygame.time.Clock()
 
-BLUE = (0, 0, 255)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
+font = pygame.font.SysFont("Arial", 24)
 
-SCREEN_WIDTH = 400
-SCREEN_HEIGHT = 600
-SPEED = 5
-COIN_SPEED = 3
+background_img = pygame.image.load("C:/Users/burni/OneDrive/Desktop/pp2/Lab8/set/road_back.png").convert()
+background_img = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
 
-DISPLAYSURF = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-DISPLAYSURF.fill(WHITE)
-pygame.display.set_caption("Game")
+player_img = pygame.image.load("C:/Users/burni/OneDrive/Desktop/pp2/Lab8/set/car.png").convert_alpha()
+player_img = pygame.transform.scale(player_img, (60, 80))
+player_rect = player_img.get_rect(center=(WIDTH // 2, HEIGHT - 80))
 
-class Enemy(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.image = pygame.image.load("Enemy.png")
-        self.rect = self.image.get_rect()
-        self.rect.center = (random.randint(40, SCREEN_WIDTH - 40), 0)
+enemy_img = pygame.image.load("C:/Users/burni/OneDrive/Desktop/pp2/Lab8/set/enemy_car.png").convert_alpha()
+enemy_img = pygame.transform.scale(enemy_img, (60, 80))
 
-    def move(self):
-        self.rect.move_ip(0, SPEED)
-        if self.rect.top > SCREEN_HEIGHT:
-            self.rect.top = 0
-            self.rect.center = (random.randint(30, 370), 0)
+coin_img = pygame.image.load("C:/Users/burni/OneDrive/Desktop/pp2/Lab8/set/coin.png").convert_alpha()
+coin_img = pygame.transform.scale(coin_img, (40, 40))
 
-class Player(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.image = pygame.image.load("Player.png")
-        self.rect = self.image.get_rect()
-        self.rect.center = (160, 520)
+player_speed = 5
+coin_score = 0
+enemy_speed_increase = 0
 
-    def move(self):
-        pressed_keys = pygame.key.get_pressed()
-        if self.rect.left > 0 and pressed_keys[K_LEFT]:
-            self.rect.move_ip(-5, 0)
-        if self.rect.right < SCREEN_WIDTH and pressed_keys[K_RIGHT]:
-            self.rect.move_ip(5, 0)
+enemies = []
+for _ in range(3):
+    x = random.randint(40, WIDTH - 100)
+    y = random.randint(-600, -100)
+    speed = random.randint(3, 6)
+    rect = enemy_img.get_rect(topleft=(x, y))
+    enemies.append({"rect": rect, "speed": speed})
 
-class Coin(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.image = pygame.image.load("Coin.png")
-        self.rect = self.image.get_rect()
-        self.rect.center = (random.randint(40, SCREEN_WIDTH - 40), 0)
+coins = []
+for _ in range(3):
+    x = random.randint(40, WIDTH - 80)
+    y = random.randint(-600, -100)
+    rect = coin_img.get_rect(topleft=(x, y))
+    coins.append(rect)
 
-    def move(self):
-        self.rect.move_ip(0, COIN_SPEED)
-        if self.rect.top > SCREEN_HEIGHT:
-            self.rect.top = 0
-            self.rect.center = (random.randint(30, 370), 0)
+running = True
+while running:
+    screen.blit(background_img, (0, 0))
 
-P1 = Player()
-E1 = Enemy()
-C1 = Coin()
-
-enemies = pygame.sprite.Group()
-enemies.add(E1)
-
-coins = pygame.sprite.Group()
-coins.add(C1)
-
-all_sprites = pygame.sprite.Group()
-all_sprites.add(P1, E1, C1)
-
-INC_SPEED = pygame.USEREVENT + 1
-pygame.time.set_timer(INC_SPEED, 1000)
-
-def display_score():
-    font = pygame.font.SysFont("Verdana", 20)
-    score_text = font.render(f"Coins: {SCORE}", True, BLACK)
-    DISPLAYSURF.blit(score_text, (SCREEN_WIDTH - 100, 10))
-
-while True:
     for event in pygame.event.get():
-        if event.type == INC_SPEED:
-            SPEED += 2
-        if event.type == QUIT:
+        if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
 
-    DISPLAYSURF.fill(WHITE)
-    
-    for entity in all_sprites:
-        DISPLAYSURF.blit(entity.image, entity.rect)
-        entity.move()
-    
-    if pygame.sprite.spritecollideany(P1, enemies):
-        DISPLAYSURF.fill(RED)
-        pygame.display.update()
-        time.sleep(2)
-        pygame.quit()
-        sys.exit()
-    
-    if pygame.sprite.spritecollideany(P1, coins):
-        global SCORE
-        SCORE += 1
-        C1.rect.top = 0
-        C1.rect.center = (random.randint(30, 370), 0)
-    
-    SCORE = 0
-    
-    display_score()
+    keys = pygame.key.get_pressed()
+    if (keys[pygame.K_a] or keys[pygame.K_LEFT]) and player_rect.left > 0:
+        player_rect.move_ip(-player_speed, 0)
+    if (keys[pygame.K_d] or keys[pygame.K_RIGHT]) and player_rect.right < WIDTH:
+        player_rect.move_ip(player_speed, 0)
+
+    for enemy in enemies:
+        enemy["rect"].y += enemy["speed"]
+        if enemy["rect"].top > HEIGHT:
+            enemy["rect"].x = random.randint(40, WIDTH - 100)
+            enemy["rect"].y = random.randint(-600, -100)
+            enemy["speed"] = random.randint(3, 6) + enemy_speed_increase
+
+    for coin in coins:
+        coin.y += 4
+        if coin.top > HEIGHT:
+            coin.topleft = (random.randint(40, WIDTH - 80), random.randint(-600, -100))
+
+    for enemy in enemies:
+        if player_rect.colliderect(enemy["rect"]):
+            text = font.render("Game Over!", True, (200, 0, 0))
+            screen.blit(text, (WIDTH // 2 - 60, HEIGHT // 2))
+            pygame.display.update()
+            pygame.time.wait(2000)
+            pygame.quit()
+            sys.exit()
+
+    for coin in coins:
+        if player_rect.colliderect(coin):
+            coin_score += 1
+            coin.topleft = (random.randint(40, WIDTH - 80), random.randint(-600, -100))
+            if coin_score % 3 == 0:
+                enemy_speed_increase += 1
+
+    screen.blit(player_img, player_rect)
+
+    for enemy in enemies:
+        screen.blit(enemy_img, enemy["rect"])
+
+    for coin in coins:
+        screen.blit(coin_img, coin)
+
+    score_text = font.render(f"Coins: {coin_score}", True, (0, 0, 0))
+    screen.blit(score_text, (WIDTH - 120, 10))
+
     pygame.display.update()
-    FramePerSec.tick(FPS)
+    clock.tick(60)
